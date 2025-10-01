@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Juego de Tablas de Multiplicar</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Arial', sans-serif;
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 30px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #ff6b9d;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .table-selection {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .table-btn {
+            padding: 20px;
+            border: 3px solid #c7ecee;
+            background: #e3f6f5;
+            border-radius: 15px;
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #2d9596;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .table-btn:hover {
+            transform: scale(1.1);
+            background: #bae8e8;
+        }
+
+        .table-btn.selected {
+            background: #2d9596;
+            color: white;
+            border-color: #2d9596;
+        }
+
+        .start-btn, .restart-btn {
+            width: 100%;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 1.5em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.3s;
+            margin-top: 20px;
+        }
+
+        .start-btn:hover, .restart-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .start-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: scale(1);
+        }
+
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            font-size: 1.2em;
+        }
+
+        .score {
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .timer {
+            color: #ff6b9d;
+            font-weight: bold;
+            font-size: 1.5em;
+        }
+
+        .timer.warning {
+            animation: pulse 0.5s infinite;
+            color: #ff4757;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .question-box {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            margin-bottom: 30px;
+            min-height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .question {
+            font-size: 3em;
+            font-weight: bold;
+            color: #2d3561;
+        }
+
+        .feedback-message {
+            font-size: 2.5em;
+            font-weight: bold;
+            animation: bounceIn 0.6s;
+        }
+
+        .feedback-message.correct {
+            color: #2ecc71;
+        }
+
+        .feedback-message.wrong {
+            color: #e74c3c;
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .option-btn {
+            padding: 25px;
+            border: 3px solid #dfe6e9;
+            background: white;
+            border-radius: 15px;
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #2d3561;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            transform: translateY(-5px);
+            border-color: #74b9ff;
+            background: #dfe6e9;
+        }
+
+        .option-btn:disabled {
+            cursor: not-allowed;
+        }
+
+        .option-btn.correct {
+            background: #2ecc71;
+            border-color: #27ae60;
+            color: white;
+            animation: correctAnswer 0.6s;
+        }
+
+        .option-btn.wrong {
+            background: #e74c3c;
+            border-color: #c0392b;
+            color: white;
+            animation: wrongAnswer 0.6s;
+        }
+
+        @keyframes correctAnswer {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px) rotate(-5deg); }
+            75% { transform: translateX(10px) rotate(5deg); }
+        }
+
+        @keyframes wrongAnswer {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-15px); }
+            50% { transform: translateX(15px); }
+            75% { transform: translateX(-15px); }
+        }
+
+        .summary {
+            text-align: center;
+        }
+
+        .summary h2 {
+            color: #667eea;
+            margin-bottom: 30px;
+            font-size: 2em;
+        }
+
+        .stat {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            padding: 20px;
+            border-radius: 15px;
+            margin: 15px 0;
+            font-size: 1.3em;
+        }
+
+        .stat-label {
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #2d3561;
+        }
+
+        .best-score {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .progress {
+            text-align: center;
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+        }
+
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            background: #f0f;
+            position: absolute;
+            animation: confetti-fall 3s linear;
+        }
+
+        @keyframes confetti-fall {
+            to {
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 Tablas de Multiplicar 🎮</h1>
+        
+        <!-- Pantalla de selección -->
+        <div id="selectionScreen" class="screen active">
+            <h2 style="text-align: center; color: #2d9596; margin-bottom: 20px;">Selecciona las tablas que quieres practicar:</h2>
+            <div class="table-selection" id="tableSelection"></div>
+            <button class="start-btn" id="startBtn" disabled>¡Comenzar!</button>
+        </div>
+
+        <!-- Pantalla de juego -->
+        <div id="gameScreen" class="screen">
+            <div class="game-header">
+                <div class="score">Puntos: <span id="score">0</span></div>
+                <div class="timer">⏱️ <span id="timer">5</span>s</div>
+            </div>
+            <div class="progress" id="progress"></div>
+            <div class="question-box" id="questionBox">
+                <div class="question" id="question"></div>
+            </div>
+            <div class="options" id="options"></div>
+        </div>
+
+        <!-- Pantalla de resumen -->
+        <div id="summaryScreen" class="screen">
+            <div class="summary">
+                <h2>🎉 ¡Juego Terminado! 🎉</h2>
+                <div class="stat">
+                    <div class="stat-label">Puntuación Total</div>
+                    <div class="stat-value" id="finalScore">0</div>
+                </div>
+                <div class="stat best-score">
+                    <div class="stat-label">🏆 Mejor Puntuación 🏆</div>
+                    <div class="stat-value" id="bestScore">0</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">✅ Aciertos</div>
+                    <div class="stat-value" id="correctAnswers">0</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">❌ Fallos</div>
+                    <div class="stat-value" id="wrongAnswers">0</div>
+                </div>
+                <button class="restart-btn" id="restartBtn">Jugar de Nuevo</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Variables globales
+        let selectedTables = new Set();
+        let questions = [];
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let correctCount = 0;
+        let wrongCount = 0;
+        let timeLeft = 5;
+        let timerInterval;
+        let answeredCurrentQuestion = false;
+
+        const correctMessages = ['¡Bien!', '¡Súper!', '¡Genial!', '¡Excelente!', '¡Bravo!', '¡Perfecto!'];
+        const wrongMessages = ['¡Oh oh!', '¡Vaya!', '¡Casi!', '¡Intenta otra!'];
+
+        // Inicializar selección de tablas
+        function initTableSelection() {
+            const container = document.getElementById('tableSelection');
+            for (let i = 1; i <= 10; i++) {
+                const btn = document.createElement('button');
+                btn.className = 'table-btn';
+                btn.textContent = i;
+                btn.onclick = () => toggleTable(i, btn);
+                container.appendChild(btn);
+            }
+        }
+
+        function toggleTable(num, btn) {
+            if (selectedTables.has(num)) {
+                selectedTables.delete(num);
+                btn.classList.remove('selected');
+            } else {
+                selectedTables.add(num);
+                btn.classList.add('selected');
+            }
+            document.getElementById('startBtn').disabled = selectedTables.size === 0;
+        }
+
+        function generateQuestions() {
+            questions = [];
+            selectedTables.forEach(table => {
+                for (let i = 1; i <= 10; i++) {
+                    questions.push({
+                        num1: table,
+                        num2: i,
+                        answer: table * i
+                    });
+                }
+            });
+            // Desordenar preguntas
+            questions.sort(() => Math.random() - 0.5);
+        }
+
+        function startGame() {
+            generateQuestions();
+            currentQuestionIndex = 0;
+            score = 0;
+            correctCount = 0;
+            wrongCount = 0;
+            
+            showScreen('gameScreen');
+            showNextQuestion();
+        }
+
+        function showNextQuestion() {
+            if (currentQuestionIndex >= questions.length) {
+                endGame();
+                return;
+            }
+
+            answeredCurrentQuestion = false;
+            const q = questions[currentQuestionIndex];
+            
+            document.getElementById('progress').textContent = 
+                `Pregunta ${currentQuestionIndex + 1} de ${questions.length}`;
+            
+            document.getElementById('score').textContent = score;
+            document.getElementById('questionBox').innerHTML = 
+                `<div class="question">${q.num1} × ${q.num2} = ?</div>`;
+            
+            // Generar opciones
+            const options = generateOptions(q.answer);
+            const optionsContainer = document.getElementById('options');
+            optionsContainer.innerHTML = '';
+            
+            options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.textContent = opt;
+                btn.onclick = () => checkAnswer(opt, q.answer, btn);
+                optionsContainer.appendChild(btn);
+            });
+
+            // Iniciar temporizador
+            timeLeft = 5;
+            updateTimer();
+            clearInterval(timerInterval);
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+
+        function generateOptions(correct) {
+            const options = [correct];
+            const used = new Set([correct]);
+            
+            while (options.length < 3) {
+                let wrong;
+                // Generar opciones cercanas para ser desafiante
+                const offset = Math.floor(Math.random() * 20) - 10;
+                wrong = correct + offset;
+                
+                // Asegurar que sea positivo y diferente
+                if (wrong > 0 && !used.has(wrong)) {
+                    options.push(wrong);
+                    used.add(wrong);
+                }
+            }
+            
+            // Desordenar opciones
+            return options.sort(() => Math.random() - 0.5);
+        }
+
+        function updateTimer() {
+            const timerEl = document.getElementById('timer');
+            timerEl.textContent = timeLeft;
+            
+            if (timeLeft <= 2) {
+                timerEl.parentElement.classList.add('warning');
+            } else {
+                timerEl.parentElement.classList.remove('warning');
+            }
+            
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                if (!answeredCurrentQuestion) {
+                    handleWrongAnswer();
+                }
+            } else {
+                timeLeft--;
+            }
+        }
+
+        function checkAnswer(selected, correct, btn) {
+            if (answeredCurrentQuestion) return;
+            
+            answeredCurrentQuestion = true;
+            clearInterval(timerInterval);
+            
+            // Deshabilitar todos los botones
+            document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+            
+            if (selected === correct) {
+                handleCorrectAnswer(btn);
+            } else {
+                handleWrongAnswer(btn);
+                // Mostrar respuesta correcta
+                document.querySelectorAll('.option-btn').forEach(b => {
+                    if (parseInt(b.textContent) === correct) {
+                        b.classList.add('correct');
+                    }
+                });
+            }
+        }
+
+        function handleCorrectAnswer(btn) {
+            btn.classList.add('correct');
+            correctCount++;
+            
+            // Calcular puntos (10 por cada segundo sobrante)
+            const points = (timeLeft + 1) * 10;
+            score += points;
+            document.getElementById('score').textContent = score;
+            
+            // Mostrar mensaje motivador
+            const message = correctMessages[Math.floor(Math.random() * correctMessages.length)];
+            document.getElementById('questionBox').innerHTML = 
+                `<div class="feedback-message correct">${message} +${points} puntos</div>`;
+            
+            // Confeti
+            createConfetti();
+            
+            setTimeout(() => {
+                currentQuestionIndex++;
+                showNextQuestion();
+            }, 2000);
+        }
+
+        function handleWrongAnswer(btn) {
+            if (btn) btn.classList.add('wrong');
+            wrongCount++;
+            
+            // Mostrar mensaje
+            const message = wrongMessages[Math.floor(Math.random() * wrongMessages.length)];
+            document.getElementById('questionBox').innerHTML = 
+                `<div class="feedback-message wrong">${message}</div>`;
+            
+            setTimeout(() => {
+                currentQuestionIndex++;
+                showNextQuestion();
+            }, 2000);
+        }
+
+        function createConfetti() {
+            const colors = ['#ff6b9d', '#667eea', '#764ba2', '#2ecc71', '#f093fb'];
+            for (let i = 0; i < 30; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.style.position = 'fixed';
+                    confetti.style.left = Math.random() * 100 + '%';
+                    confetti.style.top = '-10px';
+                    confetti.style.width = '10px';
+                    confetti.style.height = '10px';
+                    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.animation = 'confetti-fall 3s linear';
+                    document.body.appendChild(confetti);
+                    
+                    setTimeout(() => confetti.remove(), 3000);
+                }, i * 50);
+            }
+        }
+
+        function endGame() {
+            clearInterval(timerInterval);
+            
+            // Guardar y obtener mejor puntuación
+            const bestScore = localStorage.getItem('bestScore') || 0;
+            if (score > bestScore) {
+                localStorage.setItem('bestScore', score);
+                document.getElementById('bestScore').textContent = score + ' 🆕';
+            } else {
+                document.getElementById('bestScore').textContent = bestScore;
+            }
+            
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('correctAnswers').textContent = correctCount;
+            document.getElementById('wrongAnswers').textContent = wrongCount;
+            
+            showScreen('summaryScreen');
+        }
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function resetGame() {
+            selectedTables.clear();
+            document.querySelectorAll('.table-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            document.getElementById('startBtn').disabled = true;
+            showScreen('selectionScreen');
+        }
+
+        // Event listeners
+        document.getElementById('startBtn').addEventListener('click', startGame);
+        document.getElementById('restartBtn').addEventListener('click', resetGame);
+
+        // Inicializar
+        initTableSelection();
+    </script>
+</body>
+</html>
